@@ -34,6 +34,7 @@ public class RandomAI extends AIBase {
     //
     tryAttackMonster(turn);
     tryAttackTower(turn);
+    trySelfHeal(turn);
     tryAttackChampion(turn);
     // Add a move action in case we could not attack the Nexus.
     tryMove(turn);
@@ -58,6 +59,19 @@ public class RandomAI extends AIBase {
         public void visitChampion(Champion targetChampion) {
           if((targetChampion.teamID() != teamID) && (targetChampion.currentHP() > champion.damages())) {
             turn.registerAction(new Attack(teamID, id, targetChampion.x(), targetChampion.y()));
+          }
+        }
+      }));
+  }
+
+  // Champions replenish their health next to friendly towers
+  protected void trySelfHeal(Turn turn) {
+    arena.teamOf(teamID).forEachChampion((champion, id) ->
+      traversal.visitAdjacent(champion.x(), champion.y(), 1, new TileVisitor(){
+        public void visitTower(Tower tower) {
+          if((tower.teamOfTower() == teamID) && (champion.currentHP() != champion.initialHP())) {
+            turn.registerAction(new Attack(teamID, id, -1, -1));
+            champion.reviveAt(champion.x(), champion.y());
           }
         }
       }));
