@@ -34,6 +34,7 @@ public class RandomAI extends AIBase {
     //
     tryAttackMonster(turn);
     tryAttackTower(turn);
+    tryAttackChampion(turn);
     // Add a move action in case we could not attack the Nexus.
     tryMove(turn);
     return turn;
@@ -45,6 +46,18 @@ public class RandomAI extends AIBase {
         public void visitNexus(Nexus nexus) {
           if(nexus.teamOfNexus() != teamID) {
             turn.registerAction(new Attack(teamID, id, nexus.x(), nexus.y()));
+          }
+        }
+      }));
+  }
+
+  // Champions don't attack enemy champions if it would kill them, as this instantly crashes the game
+  protected void tryAttackChampion(Turn turn) {
+    arena.teamOf(teamID).forEachChampion((champion, id) ->
+      traversal.visitAdjacent(champion.x(), champion.y(), champion.attackRange(), new TileVisitor(){
+        public void visitChampion(Champion targetChampion) {
+          if((targetChampion.teamID() != teamID) && (targetChampion.currentHP() > champion.damages())) {
+            turn.registerAction(new Attack(teamID, id, targetChampion.x(), targetChampion.y()));
           }
         }
       }));
